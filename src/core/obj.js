@@ -2156,8 +2156,137 @@ let ObjectLoader = (function() {
   return ObjectLoader;
 })();
 
+class ExtendedCatalog extends Catalog {
+  constructor(pdfManager, xref) {
+    super(pdfManager, xref);
+
+    this.pages = this.getPages(this.toplevelPagesDict.get('Kids'));
+  }
+
+  _convertDict(dict) {
+    let objectToReturn = {};
+    let keysArray = dict.getKeys();
+
+    keysArray.forEach((key) => {
+      let keyValue = dict.get(key);
+      if (isDict(keyValue)) {
+        objectToReturn[key] = this._convertDict(keyValue);
+      } else {
+        objectToReturn[key] = keyValue;
+      }
+    });
+
+    return objectToReturn;
+  }
+
+  get structTreeRoot() {
+    const structTreeRoot = this.catDict.get('StructTreeRoot');
+    if (!isDict(structTreeRoot)) {
+      return null;
+    }
+    return shadow(this, 'structTreeRoot', structTreeRoot);
+  }
+
+  get classMap() {
+    if (isDict(this.structTreeRoot) && this.structTreeRoot.has('ClassMap')) {
+      return shadow(this, 'classMap', this._convertDict(this.structTreeRoot.get('ClassMap')));
+    } else {
+      return null;
+    }
+  }
+
+  get roleMap() {
+    if (isDict(this.structTreeRoot) && this.structTreeRoot.has('RoleMap')) {
+      return shadow(this, 'roleMap', this._convertDict(this.structTreeRoot.get('RoleMap')));
+    } else {
+      return null;
+    }
+  }
+
+  getTreeElement(el, page, ref) {
+    //update page for current element
+    if (isDict(el) && el.has('Pg')) {
+      let pageRef = el.getRaw('Pg');
+      let newPage = this.pages.findIndex(el => el.num === pageRef.num && el.gen === pageRef.gen);
+      newPage = newPage !== -1 ? newPage : null;
+      if (newPage !== page) {
+        page = newPage;
+      }
+    }
+
+    if (isDict(el) && el.has('K')) {
+      return {
+        name: stringToUTF8String(el.get('S').name),
+        children: this.getTreeElement(el.get('K'), page, el.getRaw('K')),
+        ref: ref
+      }
+    }
+
+    if (isDict(el) && el.has('Obj')) {
+      let obj = el.get('Obj');
+      let type = obj.get('Type').name;
+      switch (type){
+        case 'Annot':
+          let rect = obj.get('Rect');
+          return {
+            rect: [rect[0], rect[1], rect[2], rect[3]],
+            pageIndex: page
+          };
+        default:
+          break;
+      }
+    }
+
+    if (Array.isArray(el)) {
+      return el.map(subel => {
+        if (Number.isInteger(subel)) {
+          return {mcid: subel, pageIndex: page};
+        } else if (!(subel.hasOwnProperty('num') && subel.hasOwnProperty('gen')) && subel.get('Type') !== 'OBJR') {
+          return this.getTreeElement(subel, page);
+        } else if (subel.hasOwnProperty('num') && subel.hasOwnProperty('gen')){
+          return this.getTreeElement(this.xref.fetch(subel), page, subel);
+        }
+      })
+    }
+
+    if (Number.isInteger(el)) {
+      return {mcid: el, pageIndex: page};
+    }
+
+    if (isDict(el) && el.has('Type') && el.get('Type').name === 'MCR') {
+      return {mcid: el.get('MCID'), pageIndex: page};
+    }
+  }
+
+  getPages(pages) {
+    let pagesArray = [];
+    pages.map(kid => {
+      if (isRef(kid)){
+        let kidObj = this.xref.fetch(kid);
+        let kidObjType = kidObj.get('Type').name;
+        switch (kidObjType) {
+          case 'Page':
+            pagesArray.push(kid);
+            break;
+          case 'Pages':
+            let array = this.getPages(kidObj.get('Kids'));
+            pagesArray = pagesArray.concat(array);
+            break;
+          default:
+            break;
+        }
+      }
+    });
+    return pagesArray;
+  }
+
+  get structureTree() {
+    return shadow(this, 'structureTree', this.getTreeElement(this.structTreeRoot.get('K'), null, this.structTreeRoot.getRaw('K')));
+  }
+}
+
 export {
-  Catalog,
+  ExtendedCatalog as Catalog,
   ObjectLoader,
   XRef,
   FileSpec,

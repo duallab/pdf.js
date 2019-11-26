@@ -689,7 +689,29 @@ class PDFDocument {
   }
 }
 
+class ExtendedPDFDocument extends PDFDocument{
+  constructor(pdfManager, arg) {
+    super(pdfManager, arg);
+  }
+
+  get structureTree() {
+    return shadow(this, 'structureTree', this.catalog.structureTree);
+  }
+
+  get roleMap() {
+    return shadow(this, 'roleMap', this.catalog.roleMap);
+  }
+
+  get classMap() {
+    return shadow(this, 'classMap', this.catalog.classMap);
+  }
+
+  get documentStructureElements() {
+    return {structureTree: this.structureTree, roleMap: this.roleMap, classMap: this.classMap};
+  }
+}
+
 export {
   Page,
-  PDFDocument,
+  ExtendedPDFDocument as PDFDocument,
 };
