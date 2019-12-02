@@ -629,6 +629,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
             new ErrorFont('Type3 font load error: ' + reason), translated.font);
         });
       }).then((translated) => {
+        operatorList.parseBoundingBoxesOperator(OPS.setFont, [translated, fontArgs[1]]);
         state.font = translated.font;
         translated.send(this.handler);
         return translated.loadedName;
@@ -1067,6 +1068,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
                     }, rejectXObject);
                   return;
                 } else if (type.name === 'Image') {
+                  operatorList.parseBoundingBoxesOperator(OPS.paintXObject, [type.name]);
                   self.buildPaintImageXObject({
                     resources,
                     image: xobj,
@@ -1286,6 +1288,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
             case OPS.closePath:
             case OPS.rectangle:
               self.buildPath(operatorList, fn, args, parsingText);
+              operatorList.parseBoundingBoxesOperator(fn, args);
               continue;
             case OPS.markPoint:
             case OPS.markPointProps:
@@ -1294,6 +1297,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
             case OPS.endMarkedContent:
             case OPS.beginCompat:
             case OPS.endCompat:
+              operatorList.parseBoundingBoxesOperator(fn, args);
               // Ignore operators where the corresponding handlers are known to
               // be no-op in CanvasGraphics (display/canvas.js). This prevents
               // serialization errors and is also a bit more efficient.
@@ -3221,4 +3225,6 @@ var EvaluatorPreprocessor = (function EvaluatorPreprocessorClosure() {
 
 export {
   PartialEvaluator,
+  TextState,
+  StateManager,
 };
