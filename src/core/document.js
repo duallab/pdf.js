@@ -32,6 +32,7 @@ import { Linearization } from './parser';
 import { OperatorList } from './operator_list';
 import { PartialEvaluator } from './evaluator';
 import { PDFFunctionFactory } from './function';
+import {BoundingBoxesCalculator} from "./bounding_boxes";
 
 const DEFAULT_USER_UNIT = 1.0;
 const LETTER_SIZE_MEDIABOX = [0, 0, 612, 792];
@@ -221,6 +222,7 @@ class Page {
     const dataPromises = Promise.all([contentStreamPromise, resourcesPromise]);
     const pageListPromise = dataPromises.then(([contentStream]) => {
       const opList = new OperatorList(intent, sink, this.pageIndex);
+      const boundingBoxesCalculator = new BoundingBoxesCalculator();
 
       handler.send('StartRenderPage', {
         transparency: partialEvaluator.hasBlendModes(this.resources),
@@ -233,6 +235,7 @@ class Page {
         task,
         resources: this.resources,
         operatorList: opList,
+        boundingBoxesCalculator: boundingBoxesCalculator
       }).then(function() {
         return opList;
       });
@@ -689,7 +692,29 @@ class PDFDocument {
   }
 }
 
+class ExtendedPDFDocument extends PDFDocument{
+  constructor(pdfManager, arg) {
+    super(pdfManager, arg);
+  }
+
+  get structureTree() {
+    return shadow(this, 'structureTree', this.catalog.structureTree);
+  }
+
+  get roleMap() {
+    return shadow(this, 'roleMap', this.catalog.roleMap);
+  }
+
+  get classMap() {
+    return shadow(this, 'classMap', this.catalog.classMap);
+  }
+
+  get documentStructureElements() {
+    return {structureTree: this.structureTree, roleMap: this.roleMap, classMap: this.classMap};
+  }
+}
+
 export {
   Page,
-  PDFDocument,
+  ExtendedPDFDocument as PDFDocument,
 };

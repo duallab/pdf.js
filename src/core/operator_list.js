@@ -15,6 +15,7 @@
 /* eslint-disable no-unsanitized/method */
 
 import { assert, ImageKind, OPS } from '../shared/util';
+import {BoundingBoxesCalculator} from "./bounding_boxes";
 
 var QueueOptimizer = (function QueueOptimizerClosure() {
   function addState(parentState, pattern, checkFn, iterateFn, processFn) {
@@ -556,6 +557,7 @@ var OperatorList = (function OperatorListClosure() {
     this.intent = intent;
     this.weight = 0;
     this._resolved = streamSink ? null : Promise.resolve();
+    this.boundingBoxesCalculator = new BoundingBoxesCalculator();
   }
 
   OperatorList.prototype = {
@@ -576,6 +578,7 @@ var OperatorList = (function OperatorListClosure() {
     },
 
     addOp(fn, args) {
+      this.boundingBoxesCalculator.parseOperator(fn, args);
       this.optimizer.push(fn, args);
       this.weight++;
       if (this._streamSink) {
@@ -587,6 +590,10 @@ var OperatorList = (function OperatorListClosure() {
           this.flush();
         }
       }
+    },
+
+    parseBoundingBoxesOperator(fn, args) {
+      this.boundingBoxesCalculator.parseOperator(fn, args);
     },
 
     addDependency(dependency) {
@@ -652,6 +659,7 @@ var OperatorList = (function OperatorListClosure() {
         argsArray: this.argsArray,
         lastChunk,
         length,
+        boundingBoxes: this.boundingBoxesCalculator.boundingBoxes
       }, 1, this._transfers);
 
       this.dependencies = Object.create(null);
@@ -659,6 +667,7 @@ var OperatorList = (function OperatorListClosure() {
       this.argsArray.length = 0;
       this.weight = 0;
       this.optimizer.reset();
+      this.boundingBoxesCalculator.boundingBoxes = [];
     },
   };
 

@@ -680,6 +680,7 @@ let PDFViewerApplication = {
     loadingTask.onUnsupportedFeature = this.fallback.bind(this);
 
     return loadingTask.promise.then((pdfDocument) => {
+      console.log('doc', pdfDocument);
       this.load(pdfDocument);
     }, (exception) => {
       if (loadingTask !== this.pdfLoadingTask) {

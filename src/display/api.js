@@ -1149,6 +1149,7 @@ class PDFPageProxy {
         fnArray: [],
         argsArray: [],
         lastChunk: false,
+        boundingBoxes: []
       };
 
       if (this._stats) {
@@ -1319,6 +1320,7 @@ class PDFPageProxy {
     if (operatorListChunk.lastChunk) {
       this._tryCleanup();
     }
+    intentState.operatorList.boundingBoxes = operatorListChunk.boundingBoxes;
   }
 
   /**
