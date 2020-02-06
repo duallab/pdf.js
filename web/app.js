@@ -663,7 +663,7 @@ let PDFViewerApplication = {
       }
     }
 
-    let loadingTask = getDocument(parameters);
+    let loadingTask = getDocument(parameters, ['./custom_preprocessor.js']);
     this.pdfLoadingTask = loadingTask;
 
     loadingTask.onPassword = (updateCallback, reason) => {

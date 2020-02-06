@@ -32,7 +32,6 @@ import { Linearization } from './parser';
 import { OperatorList } from './operator_list';
 import { PartialEvaluator } from './evaluator';
 import { PDFFunctionFactory } from './function';
-import {BoundingBoxesCalculator} from "./bounding_boxes";
 
 const DEFAULT_USER_UNIT = 1.0;
 const LETTER_SIZE_MEDIABOX = [0, 0, 612, 792];
@@ -222,8 +221,13 @@ class Page {
     const dataPromises = Promise.all([contentStreamPromise, resourcesPromise]);
     const pageListPromise = dataPromises.then(([contentStream]) => {
       const opList = new OperatorList(intent, sink, this.pageIndex);
-      const boundingBoxesCalculator = new BoundingBoxesCalculator();
 
+      var customOperatorPreprocessor;
+      try {
+        customOperatorPreprocessor = new CustomOperatorPreprocessor();
+      } catch (e) {
+        customOperatorPreprocessor = null;
+      }
       handler.send('StartRenderPage', {
         transparency: partialEvaluator.hasBlendModes(this.resources),
         pageIndex: this.pageIndex,
@@ -235,7 +239,7 @@ class Page {
         task,
         resources: this.resources,
         operatorList: opList,
-        boundingBoxesCalculator: boundingBoxesCalculator
+        customOperatorPreprocessor,
       }).then(function() {
         return opList;
       });

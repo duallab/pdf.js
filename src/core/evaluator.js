@@ -976,12 +976,12 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
     },
 
     getOperatorList({ stream, task, resources, operatorList,
-                      initialState = null, }) {
+                      initialState = null, customOperatorPreprocessor = null }) {
       // Ensure that `resources`/`initialState` is correctly initialized,
       // even if the provided parameter is e.g. `null`.
       resources = resources || Dict.empty;
       initialState = initialState || new EvalState();
-
+      console.log(customOperatorPreprocessor);
       if (!operatorList) {
         throw new Error('getOperatorList: missing "operatorList" parameter');
       }

@@ -82,6 +82,9 @@ var WorkerMessageHandler = {
     });
 
     handler.on('GetDocRequest', function wphSetupDoc(data) {
+      if (data.extensions && port.importScripts) {
+        port.importScripts(...data.extensions);
+      }
       return WorkerMessageHandler.createDocumentHandler(data, port);
     });
   },

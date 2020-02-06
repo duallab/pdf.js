@@ -221,9 +221,10 @@ function setPDFNetworkStreamFactory(pdfNetworkStreamFactory) {
  * @param {string|TypedArray|DocumentInitParameters|PDFDataRangeTransport} src
  * Can be a url to where a PDF is located, a typed array (Uint8Array)
  * already populated with data or parameter object.
+ * @param {Array} [extensions] - Array of URLs representing the scripts to be imported.
  * @returns {PDFDocumentLoadingTask}
  */
-function getDocument(src) {
+function getDocument(src, extensions ) {
   const task = new PDFDocumentLoadingTask();
 
   let source;
@@ -333,7 +334,7 @@ function getDocument(src) {
     if (task.destroyed) {
       throw new Error('Loading aborted');
     }
-    return _fetchDocument(worker, params, rangeTransport, docId).then(
+    return _fetchDocument(worker, params, rangeTransport, docId, extensions).then(
         function(workerId) {
       if (task.destroyed) {
         throw new Error('Loading aborted');
@@ -378,11 +379,12 @@ function getDocument(src) {
  * @param {Object} source
  * @param {PDFDataRangeTransport} pdfDataRangeTransport
  * @param {string} docId Unique document id, used as MessageHandler id.
+ * @param {Array} extensions - Array of URLs representing the scripts to be imported.
  * @returns {Promise} The promise, which is resolved when worker id of
  *                    MessageHandler is known.
  * @private
  */
-function _fetchDocument(worker, source, pdfDataRangeTransport, docId) {
+function _fetchDocument(worker, source, pdfDataRangeTransport, docId, extensions) {
   if (worker.destroyed) {
     return Promise.reject(new Error('Worker was destroyed'));
   }
@@ -412,6 +414,7 @@ function _fetchDocument(worker, source, pdfDataRangeTransport, docId) {
     nativeImageDecoderSupport: source.nativeImageDecoderSupport,
     ignoreErrors: source.ignoreErrors,
     isEvalSupported: source.isEvalSupported,
+    extensions
   }).then(function(workerId) {
     if (worker.destroyed) {
       throw new Error('Worker was destroyed');
