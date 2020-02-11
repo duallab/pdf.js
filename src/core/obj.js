@@ -2163,20 +2163,20 @@ class ExtendedCatalog extends Catalog {
     this.pages = this.getPages(this.toplevelPagesDict.get('Kids'));
   }
 
-  _convertDict(dict) {
-    let objectToReturn = {};
-    let keysArray = dict.getKeys();
-
-    keysArray.forEach((key) => {
-      let keyValue = dict.get(key);
-      if (isDict(keyValue)) {
-        objectToReturn[key] = this._convertDict(keyValue);
-      } else {
-        objectToReturn[key] = keyValue;
-      }
-    });
-
-    return objectToReturn;
+  _convertStructToObject(struct) {
+    if (Array.isArray(struct)) {
+      return struct.map(el => this._convertStructToObject(el));
+    } else if (isDict(struct)) {
+      let result = {};
+      struct.getKeys().forEach(key => {
+        result[key] = this._convertStructToObject(struct.get(key));
+      });
+      return result;
+    } else if (isName(struct)) {
+      return struct.name;
+    } else {
+      return struct;
+    }
   }
 
   get structTreeRoot() {
@@ -2189,7 +2189,7 @@ class ExtendedCatalog extends Catalog {
 
   get classMap() {
     if (isDict(this.structTreeRoot) && this.structTreeRoot.has('ClassMap')) {
-      return shadow(this, 'classMap', this._convertDict(this.structTreeRoot.get('ClassMap')));
+      return shadow(this, 'classMap', this._convertStructToObject(this.structTreeRoot.get('ClassMap')));
     } else {
       return null;
     }
@@ -2197,7 +2197,7 @@ class ExtendedCatalog extends Catalog {
 
   get roleMap() {
     if (isDict(this.structTreeRoot) && this.structTreeRoot.has('RoleMap')) {
-      return shadow(this, 'roleMap', this._convertDict(this.structTreeRoot.get('RoleMap')));
+      return shadow(this, 'roleMap', this._convertStructToObject(this.structTreeRoot.get('RoleMap')));
     } else {
       return null;
     }
